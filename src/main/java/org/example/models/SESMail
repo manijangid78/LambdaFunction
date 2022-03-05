@@ -1,0 +1,115 @@
+without attachment 
+  static boolean sendSNSMail(DataSource pool){
+        try {
+            String FROM = "info@neuroequilibrium.in";
+            String TO = "rishi.mathur@neuroequilibrium.in";
+            String SUBJECT = "Amazon SES test (AWS SDK for Java)";
+            String HTMLBODY = "<h1>Amazon SES test (AWS SDK for Java)</h1>"
+                    + "<p>This email was sent with <a href='https://aws.amazon.com/ses/'>"
+                    + "Amazon SES</a> using the <a href='https://aws.amazon.com/sdk-for-java/'>"
+                    + "AWS SDK for Java</a>";
+            String TEXTBODY = "This email was sent through Amazon SES "
+                    + "using the AWS SDK for Java.";
+            AmazonSimpleEmailService client =
+                    AmazonSimpleEmailServiceClientBuilder.standard()
+                            // Replace US_WEST_2 with the AWS Region you're using for
+                            // Amazon SES.
+                            .withRegion(Regions.AP_SOUTH_1).build();
+            SendEmailRequest request = new SendEmailRequest()
+                    .withDestination(
+                            new Destination().withToAddresses(TO))
+                    .withMessage(new com.amazonaws.services.simpleemail.model.Message()
+                            .withBody(new com.amazonaws.services.simpleemail.model.Body()
+                                    .withHtml(new com.amazonaws.services.simpleemail.model.Content()
+                                            .withCharset("UTF-8").withData(HTMLBODY))
+                                    .withText(new com.amazonaws.services.simpleemail.model.Content()
+                                            .withCharset("UTF-8").withData(TEXTBODY)))
+                            .withSubject(new com.amazonaws.services.simpleemail.model.Content()
+                                    .withCharset("UTF-8").withData(SUBJECT)))
+                    .withSource(FROM);
+            client.sendEmail(request);
+            return true;
+        }catch (Exception e){
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            DatabaseOps.addLogs(sw.toString(),pool);
+            System.out.println(e);
+            return false;
+        }
+    }
+    
+    
+    With attechemnt 
+        byte[] can be string
+        static boolean sendSESMailWithAttachment(byte[] pdf,DataSource pool){
+        String SENDER = "info@neuroequilibrium.in";
+        String FROM = "info@neuroequilibrium.in";
+        String RECIPIENT = "manish.kumar@neuroequilibrium.in";
+//        String CONFIGURATION_SET = "ConfigSet";
+        String SUBJECT = "Customer service contact info";
+//        String ATTACHMENT = "";
+        String BODY_TEXT = "Hello,\r\n"
+                + "Please see the attached file for a list "
+                + "of customers to contact.";
+        String BODY_HTML = "<html>"
+                + "<head></head>"
+                + "<body>"
+                + "<h1>Hello!</h1>"
+                + "<p>Please see the attached file for a "
+                + "list of customers to contact.</p>"
+                + "</body>"
+                + "</html>";
+        try{
+            Session session = Session.getDefaultInstance(new Properties());
+            MimeMessage message = new MimeMessage(session);
+            message.setSubject(SUBJECT, "UTF-8");
+            message.setFrom(new InternetAddress(SENDER));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(RECIPIENT));
+
+            MimeMultipart msg_body = new MimeMultipart("alternative");
+            MimeBodyPart wrap = new MimeBodyPart();
+            MimeBodyPart textPart = new MimeBodyPart();
+            MimeBodyPart htmlPart = new MimeBodyPart();
+//
+
+            htmlPart.setText(BODY_TEXT);
+            htmlPart.setContent(BODY_HTML,"text/html; charset=UTF-8");
+            msg_body.addBodyPart(textPart);
+            msg_body.addBodyPart(htmlPart);
+            wrap.setContent(msg_body);
+
+            MimeMultipart msg = new MimeMultipart("mixed");
+            message.setContent(msg);
+            msg.addBodyPart(wrap);
+
+            MimeBodyPart att = new MimeBodyPart();
+            ByteArrayDataSource bds = new ByteArrayDataSource(pdf, "application/pdf");
+            att.setDataHandler(new DataHandler(bds));
+            att.setFileName(bds.getName());
+            msg.addBodyPart(att);
+
+            AmazonSimpleEmailService client = AmazonSimpleEmailServiceClientBuilder.standard()
+                    .withRegion(Regions.AP_SOUTH_1).build();
+//              Print the raw email content on the console
+//            PrintStream out = System.out;
+//            message.writeTo(out);
+
+            // Send the email.
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            message.writeTo(outputStream);
+            RawMessage rawMessage = new RawMessage(ByteBuffer.wrap(outputStream.toByteArray()));
+            SendRawEmailRequest rawEmailRequest =
+                    new SendRawEmailRequest(rawMessage);
+//                            .withConfigurationSetName(CONFIGURATION_SET);
+//            client.
+            client.sendRawEmail(rawEmailRequest);
+            System.out.println("Email sent!");
+        }catch (Exception e){
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            DatabaseOps.addLogs(sw.toString(), pool);
+        }
+        return false;
+    }
